@@ -42,4 +42,44 @@ function create_level_set_data(triangles::AbstractVector{PointToTriangle.Triangl
     LevelSetData(ϕ, grid)
 end
 
+function volume(data::LevelSetData)
+    value, grid = data.value, data.grid
+
+    l = map(step, grid.axes)
+    H = h -> heaviside_function(h, maximum(l))
+
+    prod(l) * mapreduce((ϕ,x)->H(-ϕ), +, value, grid)
+end
+
+function centroid(data::LevelSetData)
+    value, grid = data.value, data.grid
+
+    l = map(step, grid.axes)
+    H = h -> heaviside_function(h, maximum(l))
+
+    m = volume(data) # assume density is 1
+    prod(l) * mapreduce((ϕ,x)->H(-ϕ)*SVector(x), +, value, grid) / m
+end
+
+function moment_of_inertia(data::LevelSetData{T, dim}, c::SVector{dim, T} = centroid(data)) where {T, dim}
+    value, grid = data.value, data.grid
+
+    l = map(step, grid.axes)
+    H = h -> heaviside_function(h, maximum(l))
+
+    prod(l) * mapreduce((ϕ,x)->H(-ϕ)*moment_of_inertia(SVector(x), c), +, value, grid)
+end
+
+function moment_of_inertia(x::SVector{3, T}, c::SVector{3, T}) where {T}
+    I₁₁ = (x[2]-c[2])^2 + (x[3]-c[3])^2
+    I₂₂ = (x[1]-c[1])^2 + (x[3]-c[3])^2
+    I₃₃ = (x[1]-c[1])^2 + (x[2]-c[2])^2
+    I₂₃ = I₃₂ = -(x[2]-c[2]) * (x[3]-c[3])
+    I₁₃ = I₃₁ = -(x[1]-c[1]) * (x[3]-c[3])
+    I₁₂ = I₂₁ = -(x[1]-c[1]) * (x[2]-c[2])
+    @SMatrix [I₁₁ I₁₂ I₁₃
+              I₂₁ I₂₂ I₂₃
+              I₃₁ I₃₂ I₃₃]
+end
+
 commas(num::Integer) = replace(string(num), r"(?<=[0-9])(?=(?:[0-9]{3})+(?![0-9]))" => ",")
