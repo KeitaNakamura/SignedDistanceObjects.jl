@@ -24,19 +24,19 @@ function create_level_set_data(triangles::AbstractVector{PointToTriangle.Triangl
     Threads.@threads for I in eachindex(grid)
         x = SVector(grid[I])
         s = 0
+        l = T(0)
         d_min = T(Inf)
         @inbounds for i in eachindex(triangles, normals)
             tri = triangles[i]
             n = normals[i]
             v = PointToTriangle.vector(x, tri)
             d = norm(v)
-            l = v ⋅ n
-            if d < d_min && abs(l) > sqrt(eps(T))
-                s = -sign(l)
+            if d ≤ d_min+sqrt(eps(T)) && abs(normalize(v)⋅n) > l
+                l = -normalize(v)⋅n
                 d_min = d
             end
         end
-        ϕ[I] = s * d_min
+        ϕ[I] = sign(l) * d_min
         ProgressMeter.next!(p; showvalues = [(:Nodes, string(commas(Threads.atomic_add!(count, 1)), " / ", commas(length(grid))))])
     end
     LevelSetData(ϕ, grid)
