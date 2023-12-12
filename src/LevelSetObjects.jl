@@ -18,7 +18,7 @@ export
     write_vtk
 
 include("grid.jl")
-include("level_set_data.jl")
+include("levelset.jl")
 include("object.jl")
 include("fileio.jl")
 
