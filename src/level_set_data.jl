@@ -16,27 +16,31 @@ function create_level_set_data(mesh::Mesh{dim, T, <: TriangleP}, grid::Grid{dim,
     create_level_set_data(triangles, normals[1,:], grid)
 end
 
-function create_level_set_data(triangles::AbstractVector{PointToTriangle.Triangle_3DMethod{T}}, normals::AbstractVector{<: AbstractVector}, grid::Grid{3,T}) where {T}
+function create_level_set_data(triangles::AbstractVector{PointToTriangle.Triangle_3DMethod{T}}, normals::AbstractVector{<: AbstractVector}, grid::Grid{dim, T}) where {dim, T}
     @assert length(triangles) == length(normals)
     ϕ = Array{T}(undef, size(grid))
     p = ProgressMeter.Progress(length(grid); desc = "Computing level set values:")
     count = Threads.Atomic{Int}(1);
     Threads.@threads for I in eachindex(grid)
         x = SVector(grid[I])
-        s = 0
-        l = T(0)
+        v_min = fill(Inf, SVector{dim, T})
         d_min = T(Inf)
+        l_max = T(0)
         @inbounds for i in eachindex(triangles, normals)
             tri = triangles[i]
             n = normals[i]
             v = PointToTriangle.vector(x, tri)
             d = norm(v)
-            if d ≤ d_min+sqrt(eps(T)) && abs(normalize(v)⋅n) > l
-                l = -normalize(v)⋅n
+            l = -(v ⋅ n)
+            if norm(v-v_min) < cbrt(eps(T)) * d_min # `sqrt` failed (still a bit strict)
+                l_max = ifelse(abs(l) > abs(l_max), l, l_max)
+            elseif d < d_min
+                v_min = v
                 d_min = d
+                l_max = l
             end
         end
-        ϕ[I] = sign(l) * d_min
+        ϕ[I] = sign(l_max) * d_min
         ProgressMeter.next!(p; showvalues = [(:Nodes, string(commas(Threads.atomic_add!(count, 1)), " / ", commas(length(grid))))])
     end
     LevelSetData(ϕ, grid)
