@@ -7,7 +7,7 @@ function Base.show(io::IO, data::LevelSetData)
     grid = data.grid
     println(io, "LevelSetData:")
     println(io, "  Grid axes: ", grid.axes)
-    print(io,   "  Number of nodes: ", length(grid))
+    print(io,   "  Number of nodes: ", commas(length(grid)))
 end
 
 function create_level_set_data(mesh::Mesh{dim, T, <: TriangleP}, grid::Grid{dim, T}) where {dim, T}

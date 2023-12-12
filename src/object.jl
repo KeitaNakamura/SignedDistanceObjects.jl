@@ -33,7 +33,7 @@ function Base.show(io::IO, obj::LevelSetObject)
     grid = obj.grid
     println(io, "LevelSetMethod.LevelSetObject:")
     println(io, "  Grid axes: ", grid.axes)
-    println(io, "  Number of nodes: ", length(grid))
+    println(io, "  Number of nodes: ", commas(length(grid)))
     println(io, "  Density: 1")
     println(io, "  Mass: ", obj.m)
     println(io, "  Center of mass: ", obj.c)
