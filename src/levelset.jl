@@ -43,6 +43,7 @@ function create_level_set_data(triangles::AbstractVector{PointToTriangle.Triangl
         ϕ[I] = sign(l_max) * d_min
         ProgressMeter.next!(p; showvalues = [(:Nodes, string(commas(Threads.atomic_add!(count, 1)), " / ", commas(length(grid))))])
     end
+    ProgressMeter.finish!(p)
     LevelSetData(ϕ, grid)
 end
 
