@@ -19,7 +19,7 @@ end
 function create_level_set_data(triangles::AbstractVector{PointToTriangle.Triangle{T}}, normals::AbstractVector{<: AbstractVector}, grid::Grid{dim, T}) where {dim, T}
     @assert length(triangles) == length(normals)
     ϕ = Array{T}(undef, size(grid))
-    p = ProgressMeter.Progress(length(grid); desc = "Computing level set values:")
+    p = ProgressMeter.Progress(length(grid); desc = "Computing level-set values:")
     count = Threads.Atomic{Int}(1);
     Threads.@threads for I in eachindex(grid)
         x = SVector(grid[I])
@@ -62,11 +62,11 @@ function centroid(data::LevelSetData)
     l = map(step, grid.axes)
     H = h -> heaviside_function(h, maximum(l))
 
-    m = volume(data) # assume density is 1
-    prod(l) * mapreduce((ϕ,x)->H(-ϕ)*SVector(x), +, value, grid) / m
+    V = volume(data)
+    prod(l) * mapreduce((ϕ,x)->H(-ϕ)*SVector(x), +, value, grid) / V
 end
 
-function moment_of_inertia(data::LevelSetData{T, dim}, c::SVector{dim, T} = centroid(data)) where {T, dim}
+function moment_of_inertia_per_density(data::LevelSetData{T, dim}, c::SVector{dim, T} = centroid(data)) where {T, dim}
     value, grid = data.value, data.grid
 
     l = map(step, grid.axes)
@@ -85,6 +85,14 @@ function moment_of_inertia(x::SVector{3, T}, c::SVector{3, T}) where {T}
     @SMatrix [I₁₁ I₁₂ I₁₃
               I₂₁ I₂₂ I₂₃
               I₃₁ I₃₂ I₃₃]
+end
+
+function heaviside_function(ϕ::T, Δ::T, δ::T=T(1.5)) where {T <: Real}
+    ϵ = δ * Δ
+    ξ = ϕ / ϵ
+    ξ < -1 && return T(0)
+    ξ >  1 && return T(1)
+    (1 + ξ + sin(π*ξ)/π) / 2
 end
 
 commas(num::Integer) = replace(string(num), r"(?<=[0-9])(?=(?:[0-9]{3})+(?![0-9]))" => ",")

@@ -11,12 +11,6 @@ import FileIO
 import WriteVTK
 import ProgressMeter
 
-export
-    LevelSetObject,
-    LevelSetData,
-    read_stl,
-    write_vtk
-
 include("grid.jl")
 include("levelset.jl")
 include("object.jl")
