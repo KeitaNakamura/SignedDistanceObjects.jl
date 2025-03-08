@@ -11,12 +11,12 @@ function Base.show(io::IO, data::LevelSetData)
 end
 
 function create_level_set_data(mesh::Mesh{dim, T, <: TriangleP}, grid::Grid{dim, T}) where {dim, T}
-    triangles = map(tri -> PointToTriangle.Triangle(tri.points...), mesh)
+    triangles = map(tri -> Triangle(tri.points...), mesh)
     normals = reshape(mesh.normals, 3, length(mesh))
     create_level_set_data(triangles, normals[1,:], grid)
 end
 
-function create_level_set_data(triangles::AbstractVector{PointToTriangle.Triangle{T}}, normals::AbstractVector{<: AbstractVector}, grid::Grid{dim, T}) where {dim, T}
+function create_level_set_data(triangles::AbstractVector{Triangle{T}}, normals::AbstractVector{<: AbstractVector}, grid::Grid{dim, T}) where {dim, T}
     @assert length(triangles) == length(normals)
     ϕ = Array{T}(undef, size(grid))
     p = ProgressMeter.Progress(length(grid); desc = "Computing level-set values:")
@@ -29,7 +29,7 @@ function create_level_set_data(triangles::AbstractVector{PointToTriangle.Triangl
         @inbounds for i in eachindex(triangles, normals)
             tri = triangles[i]
             n = normals[i]
-            v = PointToTriangle.vector(x, tri)
+            v = point_to_triangle(x, tri)
             d = norm(v)
             l = -(v ⋅ n)
             if norm(v-v_min) < cbrt(eps(T)) * d_min # `sqrt` failed (still a bit strict)
