@@ -25,8 +25,8 @@ mass(obj::LevelSetObject) = obj.ρ * obj.V
 centroid(obj::LevelSetObject) = obj.c
 moment_of_inertia(obj::LevelSetObject) = obj.I
 
-distance(obj::LevelSetObject, x...) = obj.ϕ(x...)
-normal(obj::LevelSetObject, x...) = normalize(Interpolations.gradient(obj.ϕ, x...))
+distance(obj::LevelSetObject, x::Union{AbstractVector, Tuple}) = obj.ϕ(x...)
+normal(obj::LevelSetObject, x::Union{AbstractVector, Tuple}) = normalize(Interpolations.gradient(obj.ϕ, x...))
 
 function Base.show(io::IO, obj::LevelSetObject)
     grid = obj.grid
