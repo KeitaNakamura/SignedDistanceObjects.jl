@@ -9,7 +9,7 @@ end
 
 function write_vtk(path::String, data::LevelSetData)
     vtk = WriteVTK.vtk_grid(path, data.grid.axes...)
-    vtk["Level-set value"] = data.value
+    vtk["Level sets"] = data.value
     WriteVTK.vtk_save(vtk)
 end
 

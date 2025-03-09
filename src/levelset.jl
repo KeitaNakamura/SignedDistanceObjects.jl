@@ -19,8 +19,7 @@ end
 function create_level_set_data(triangles::AbstractVector{Triangle{T}}, normals::AbstractVector{<: AbstractVector}, grid::Grid{dim, T}) where {dim, T}
     @assert length(triangles) == length(normals)
     ϕ = Array{T}(undef, size(grid))
-    p = ProgressMeter.Progress(length(grid); desc = "Computing level-set values:")
-    count = Threads.Atomic{Int}(1);
+    p = ProgressMeter.Progress(length(grid); desc = "Computing level sets...")
     Threads.@threads for I in eachindex(grid)
         x = SVector(grid[I])
         v_min = fill(Inf, SVector{dim, T})
@@ -41,7 +40,7 @@ function create_level_set_data(triangles::AbstractVector{Triangle{T}}, normals::
             end
         end
         ϕ[I] = sign(l_max) * d_min
-        ProgressMeter.next!(p; showvalues = [(:Nodes, string(commas(Threads.atomic_add!(count, 1)), " / ", commas(length(grid))))])
+        ProgressMeter.next!(p)
     end
     ProgressMeter.finish!(p)
     LevelSetData(ϕ, grid)
