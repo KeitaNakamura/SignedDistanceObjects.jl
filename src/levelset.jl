@@ -1,25 +1,30 @@
-struct LevelSetData{T, dim, Axes}
-    value::Array{T, dim}
+struct LevelSet{T, dim, Axes}
+    ϕ::Array{T, dim}
     grid::Grid{dim, T, Axes}
 end
 
-function Base.show(io::IO, data::LevelSetData)
-    grid = data.grid
-    println(io, "LevelSetData:")
+function Base.show(io::IO, levelset::LevelSet)
+    grid = levelset.grid
+    println(io, "LevelSet:")
     println(io, "  Grid axes: ", grid.axes)
     print(io,   "  Number of nodes: ", commas(length(grid)))
 end
 
-function create_level_set_data(mesh::Mesh, grid::Grid)
+function generate_levelset(mesh::Mesh, grid::Grid; verbose::Bool=false)
     triangles = map(tri -> Triangle(tri.points...), mesh)
     normals = reshape(mesh.normal, 3, length(mesh))
-    create_level_set_data(triangles, normals[1,:], grid)
+    generate_levelset(triangles, normals[1,:], grid; verbose)
 end
 
-function create_level_set_data(triangles::AbstractVector{Triangle{T}}, normals::AbstractVector{<: AbstractVector}, grid::Grid{dim, T}) where {dim, T}
+function generate_levelset(
+        triangles::AbstractVector{Triangle{T}}, normals::AbstractVector{<: AbstractVector}, grid::Grid{dim, T};
+        verbose::Bool = false,
+    ) where {dim, T}
     @assert length(triangles) == length(normals)
     ϕ = Array{T}(undef, size(grid))
-    p = ProgressMeter.Progress(length(grid); desc = "Computing level sets...")
+    if verbose
+        p = ProgressMeter.Progress(length(grid); desc = "Generating level set...")
+    end
     Threads.@threads for I in eachindex(grid)
         x = SVector(grid[I])
         v_min = fill(Inf, SVector{dim, T})
@@ -40,38 +45,38 @@ function create_level_set_data(triangles::AbstractVector{Triangle{T}}, normals::
             end
         end
         ϕ[I] = sign(l_max) * d_min
-        ProgressMeter.next!(p)
+        verbose && ProgressMeter.next!(p)
     end
-    ProgressMeter.finish!(p)
-    LevelSetData(ϕ, grid)
+    verbose && ProgressMeter.finish!(p)
+    LevelSet(ϕ, grid)
 end
 
-function volume(data::LevelSetData)
-    value, grid = data.value, data.grid
+function volume(levelset::LevelSet)
+    ϕ, grid = levelset.ϕ, levelset.grid
 
     l = map(step, grid.axes)
     H = h -> heaviside_function(h, maximum(l))
 
-    prod(l) * mapreduce((ϕ,x)->H(-ϕ), +, value, grid)
+    prod(l) * mapreduce((ϕ,x)->H(-ϕ), +, ϕ, grid)
 end
 
-function centroid(data::LevelSetData)
-    value, grid = data.value, data.grid
+function centroid(levelset::LevelSet)
+    ϕ, grid = levelset.ϕ, levelset.grid
 
     l = map(step, grid.axes)
     H = h -> heaviside_function(h, maximum(l))
 
-    V = volume(data)
-    prod(l) * mapreduce((ϕ,x)->H(-ϕ)*SVector(x), +, value, grid) / V
+    V = volume(levelset)
+    prod(l) * mapreduce((ϕ,x)->H(-ϕ)*SVector(x), +, ϕ, grid) / V
 end
 
-function moment_of_inertia_per_density(data::LevelSetData{T, dim}, c::SVector{dim, T} = centroid(data)) where {T, dim}
-    value, grid = data.value, data.grid
+function moment_of_inertia_per_density(levelset::LevelSet{T, dim}, c::SVector{dim, T} = centroid(levelset)) where {T, dim}
+    ϕ, grid = levelset.ϕ, levelset.grid
 
     l = map(step, grid.axes)
     H = h -> heaviside_function(h, maximum(l))
 
-    prod(l) * mapreduce((ϕ,x)->H(-ϕ)*moment_of_inertia(SVector(x), c), +, value, grid)
+    prod(l) * mapreduce((ϕ,x)->H(-ϕ)*moment_of_inertia(SVector(x), c), +, ϕ, grid)
 end
 
 function moment_of_inertia(x::SVector{3, T}, c::SVector{3, T}) where {T}
