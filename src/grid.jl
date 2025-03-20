@@ -1,14 +1,14 @@
-struct Grid{dim, T, Axes <: NTuple{dim, AbstractVector{T}}} <: AbstractArray{NTuple{dim, T}, dim}
+struct Grid{dim, T, Axes <: NTuple{dim, AbstractVector{T}}} <: AbstractArray{SVector{dim, T}, dim}
     axes::Axes
 end
 Base.size(grid::Grid) = map(length, grid.axes)
 
 @inline function Base.getindex(grid::Grid{dim}, I::Vararg{Int, dim}) where {dim}
     @boundscheck checkbounds(grid, I...)
-    @inbounds map(getindex, grid.axes, I)
+    @inbounds SVector(map(getindex, grid.axes, I))
 end
 
-function construct_grid(mesh::Mesh{dim, T}; spacing::Real) where {dim, T}
+function Grid(spacing::Real, mesh::Mesh{dim, T}) where {dim, T}
     lims = get_domain(mesh)
     grid = Grid(map(lims) do (xmin, xmax)
         range(T(xmin-10spacing), T(xmax+10spacing); step=T(spacing))
