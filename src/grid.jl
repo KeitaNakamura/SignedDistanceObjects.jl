@@ -8,13 +8,13 @@ Base.size(grid::Grid) = map(length, grid.axes)
     @inbounds map(getindex, grid.axes, I)
 end
 
-function construct_grid(mesh::Mesh{dim, T, <: TriangleP}; spacing::Real) where {dim, T}
+function construct_grid(mesh::Mesh{dim, T}; spacing::Real) where {dim, T}
     lims = get_domain(mesh)
     grid = Grid(map(lims) do (xmin, xmax)
         range(T(xmin-10spacing), T(xmax+10spacing); step=T(spacing))
     end)
 end
 
-function get_domain(mesh::Mesh{dim, T, <: TriangleP}) where {dim, T}
+function get_domain(mesh::Mesh{dim, T}) where {dim, T}
     NTuple{dim, Tuple{T,T}}(extrema(reinterpret(reshape, T, mesh.position), dims=2))
 end
