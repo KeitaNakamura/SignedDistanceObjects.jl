@@ -26,25 +26,27 @@ function generate_levelset(
         p = ProgressMeter.Progress(length(grid); desc = "Generating level set...")
     end
     Threads.@threads for I in eachindex(grid)
-        x = SVector(grid[I])
-        v_min = fill(Inf, SVector{dim, T})
-        d_min = T(Inf)
-        l_max = T(0)
-        @inbounds for i in eachindex(triangles, normals)
-            tri = triangles[i]
-            n = normals[i]
-            v = point_to_triangle(x, tri)
-            d = norm(v)
-            l = -(v ⋅ n)
-            if norm(v-v_min) < sqrt(eps(T)) * d_min
-                l_max = ifelse(abs(l) > abs(l_max), l, l_max)
-            elseif d < d_min
-                v_min = v
-                d_min = d
-                l_max = l
+        @inbounds begin
+            x = grid[I]
+            v_min = fill(Inf, SVector{dim, T})
+            d²_min = T(Inf)
+            dₙ_max = T(0)
+            for i in eachindex(triangles, normals)
+                tri = triangles[i]
+                n = normals[i]
+                v = point_to_triangle(x, tri)
+                d² = norm2(v)
+                dₙ = -(v ⋅ n)
+                if norm2(v-v_min) < eps(T) * d²_min
+                    dₙ_max = ifelse(abs(dₙ) > abs(dₙ_max), dₙ, dₙ_max)
+                elseif d² < d²_min
+                    v_min = v
+                    d²_min = d²
+                    dₙ_max = dₙ
+                end
             end
+            ϕ[I] = sign(dₙ_max) * sqrt(d²_min)
         end
-        ϕ[I] = sign(l_max) * d_min
         verbose && ProgressMeter.next!(p)
     end
     verbose && ProgressMeter.finish!(p)
