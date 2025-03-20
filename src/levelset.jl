@@ -31,7 +31,7 @@ function create_level_set_data(triangles::AbstractVector{Triangle{T}}, normals::
             v = point_to_triangle(x, tri)
             d = norm(v)
             l = -(v ⋅ n)
-            if norm(v-v_min) < cbrt(eps(T)) * d_min # `sqrt` failed (still a bit strict)
+            if norm(v-v_min) < sqrt(eps(T)) * d_min
                 l_max = ifelse(abs(l) > abs(l_max), l, l_max)
             elseif d < d_min
                 v_min = v
