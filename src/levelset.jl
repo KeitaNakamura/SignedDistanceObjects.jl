@@ -10,9 +10,9 @@ function Base.show(io::IO, data::LevelSetData)
     print(io,   "  Number of nodes: ", commas(length(grid)))
 end
 
-function create_level_set_data(mesh::Mesh{dim, T, <: TriangleP}, grid::Grid{dim, T}) where {dim, T}
+function create_level_set_data(mesh::Mesh, grid::Grid)
     triangles = map(tri -> Triangle(tri.points...), mesh)
-    normals = reshape(mesh.normals, 3, length(mesh))
+    normals = reshape(mesh.normal, 3, length(mesh))
     create_level_set_data(triangles, normals[1,:], grid)
 end
 
