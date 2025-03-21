@@ -31,8 +31,8 @@ using StaticArrays
         @test LevelSetObjects.centroid(obj) ≈ c rtol=0.04
         @test LevelSetObjects.moment_of_inertia(obj) ≈ I rtol=0.04
         # check moment of inertia for other axes
-        @test LevelSetObjects.moment_of_inertia_per_density(obj.levelset, SVector(1000.0,1000.0,0.0)) ≈ [(3/5)*m*h^2+(3/20)*m*r^2 0 0; 0 (3/5)*m*h^2+(3/20)*m*r^2 0; 0 0 (3/10)*m*r^2] rtol=0.04
-        @test LevelSetObjects.moment_of_inertia_per_density(obj.levelset, SVector(1000.0,1000.0,h)) ≈ [(1/10)*m*h^2+(3/20)*m*r^2 0 0; 0 (1/10)*m*h^2+(3/20)*m*r^2 0; 0 0 (3/10)*m*r^2] rtol=0.04
+        @test LevelSetObjects.moment_of_inertia_per_density(obj.levelset, SVector{3,Float32}(1000,1000,0)) ≈ [(3/5)*m*h^2+(3/20)*m*r^2 0 0; 0 (3/5)*m*h^2+(3/20)*m*r^2 0; 0 0 (3/10)*m*r^2] rtol=0.04
+        @test LevelSetObjects.moment_of_inertia_per_density(obj.levelset, SVector{3,Float32}(1000,1000,h)) ≈ [(1/10)*m*h^2+(3/20)*m*r^2 0 0; 0 (1/10)*m*h^2+(3/20)*m*r^2 0; 0 0 (3/10)*m*r^2] rtol=0.04
     end
     @testset "Tube" begin
         obj = LevelSetObjects.create_object("tube.stl"; gridspacing=50.0)
