@@ -22,9 +22,7 @@ function generate_levelset(
     ) where {dim, T}
     @assert length(triangles) == length(normals)
     ϕ = Array{T}(undef, size(grid))
-    if verbose
-        p = ProgressMeter.Progress(length(grid); desc = "Generating level set...")
-    end
+    p = ProgressMeter.Progress(length(grid); desc = "Generating level set...", enabled=verbose)
     Threads.@threads for I in eachindex(grid)
         @inbounds begin
             x = grid[I]
@@ -47,9 +45,9 @@ function generate_levelset(
             end
             ϕ[I] = sign(dₙ_max) * sqrt(d²_min)
         end
-        verbose && ProgressMeter.next!(p)
+        ProgressMeter.next!(p)
     end
-    verbose && ProgressMeter.finish!(p)
+    ProgressMeter.finish!(p)
     LevelSet(ϕ, grid)
 end
 
