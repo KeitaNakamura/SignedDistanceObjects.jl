@@ -1,8 +1,9 @@
-function create_object(path::String; gridspacing::Real, density::Real=1, datatype::Type{T}=Float64, verbose::Bool=false) where {T}
+function create_object(path::String; gridspacing::Real, density::Real=1, verbose::Bool=false)
     @assert endswith(path, ".stl")
-    surface_mesh = FileIO.load(path; pointtype=Point{3,T})
+    surface_mesh = FileIO.load(path)
     grid = Grid(gridspacing, surface_mesh)
     levelset = generate_levelset(surface_mesh, grid; verbose)
+    T = eltype(levelset.ϕ)
     LevelSetObject(levelset; density=T(density))
 end
 
