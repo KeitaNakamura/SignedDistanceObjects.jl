@@ -28,54 +28,37 @@ end
 @inline function point_to_triangle(P₀::SVector{3,T}, tri::Triangle{T}) where {T}
     P₁, P₂, P₃, Nₚ = tri.P₁, tri.P₂, tri.P₃, tri.Nₚ
     P₀′ = P₀ - ((P₀-P₁)⋅Nₚ) * Nₚ
-    pos = _position(P₀′, tri)
-    pos == 0 && return P₀′-P₀
-    pos == 1 && return _point_to_side(P₀′, P₀, P₁, P₂)
-    pos == 2 && return _point_to_side(P₀′, P₀, P₂, P₃)
-    pos == 3 && return _point_to_side(P₀′, P₀, P₃, P₁)
-    error("unreachable")
+    _position(P₀′, tri) - P₀
 end
 
-# 0: inside, 1: P₁P₂, 2: P₂P₃, 3: P₃P₁
 @inline function _position(P₀′::SVector{3,T}, tri::Triangle{T}) where {T}
     P₁, P₂, P₃, Nₚ, V₁, V₂, V₃ = tri.P₁, tri.P₂, tri.P₃, tri.Nₚ, tri.V₁, tri.V₂, tri.V₃
     P₁P₀′ = P₀′ - P₁
     P₂P₀′ = P₀′ - P₂
     P₃P₀′ = P₀′ - P₃
-    f₁ = V₁ ⋅ P₁P₀′
-    f₂ = V₂ ⋅ P₂P₀′
-    f₃ = V₃ ⋅ P₃P₀′
-    if f₁ > 0
-        if f₂ > 0
-            return ifelse((P₂P₀′×P₃P₀′)⋅Nₚ ≥ 0, 0, 2)
+    if (V₁ ⋅ P₁P₀′) > 0
+        if (V₂ ⋅ P₂P₀′) > 0
+            __position(P₀′, P₂, P₃, P₂P₀′, P₃P₀′, Nₚ)
         else
-            return ifelse((P₁P₀′×P₂P₀′)⋅Nₚ ≥ 0, 0, 1)
+            __position(P₀′, P₁, P₂, P₁P₀′, P₂P₀′, Nₚ)
         end
     else
-        if f₃ > 0
-            return ifelse((P₃P₀′×P₁P₀′)⋅Nₚ ≥ 0, 0, 3)
+        if (V₃ ⋅ P₃P₀′) > 0
+            __position(P₀′, P₃, P₁, P₃P₀′, P₁P₀′, Nₚ)
         else
-            return ifelse((P₂P₀′×P₃P₀′)⋅Nₚ ≥ 0, 0, 2)
+            __position(P₀′, P₂, P₃, P₂P₀′, P₃P₀′, Nₚ)
         end
     end
-    # f₁ > 0 && f₂ ≤ 0 && return ifelse((P₁P₀′×P₂P₀′)⋅Nₚ ≥ 0, 0, 1)
-    # f₂ > 0 && f₃ ≤ 0 && return ifelse((P₂P₀′×P₃P₀′)⋅Nₚ ≥ 0, 0, 2)
-    # f₃ > 0 && f₁ ≤ 0 && return ifelse((P₃P₀′×P₁P₀′)⋅Nₚ ≥ 0, 0, 3)
-    # error("unreachable")
 end
 
-@inline function _point_to_side(P₀′::SVector{3,T}, P₀::SVector{3,T}, P₁::SVector{3,T}, P₂::SVector{3,T}) where {T}
+@inline function __position(P₀′::SVector{3,T}, P₁::SVector{3,T}, P₂::SVector{3,T}, P₁P₀′::SVector{3,T}, P₂P₀′::SVector{3,T}, Nₚ::SVector{3,T}) where {T}
+    P₁P₀′xP₂P₀′ = P₁P₀′ × P₂P₀′
+    (P₁P₀′xP₂P₀′) ⋅ Nₚ > sqrt(eps(T)) && return P₀′
     P₁P₂ = P₂ - P₁
-    P₀′P₁ = P₁ - P₀′
-    R = ((P₂-P₀′) × P₀′P₁) × P₁P₂
-    P₀′′ = -P₀′P₁ + ((P₀′P₁⋅R)/(R⋅R)) * R
+    R = P₁P₂ × P₁P₀′xP₂P₀′
+    P₀′′ = P₁P₀′ - ((P₁P₀′⋅R)/norm2(R)) * R
     t = (P₀′′⋅P₁P₂) / norm2(P₁P₂)
-    if 0 ≤ t
-        return t ≤ 1 ? (P₁+t*P₁P₂)-P₀ : P₂-P₀
-    else
-        return P₁-P₀
-    end
-    # 0 ≤ t ≤ 1 && return (P₁+t*P₁P₂)-P₀
-    # t < 0 ? P₁-P₀ : P₂-P₀
+    ifelse(0 ≤ t, ifelse(t ≤ 1, P₁+t*P₁P₂, P₂), P₁)
 end
+
 @inline norm2(x) = dot(x,x)
