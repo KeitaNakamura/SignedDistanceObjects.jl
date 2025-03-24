@@ -21,37 +21,33 @@ function Triangle(P₁::SVector{3,T}, P₂::SVector{3,T}, P₃::SVector{3,T}) wh
     Triangle(P₁, P₂, P₃, Nₚ, V₁, V₂, V₃)
 end
 
-@inline function point_to_triangle(P₀::AbstractVector{T}, tri::Triangle{T}) where {T}
-    @assert length(P₀) == 3
-    convert(typeof(P₀), vector(SVector{3,T}(P₀), tri))
-end
-@inline function point_to_triangle(P₀::SVector{3,T}, tri::Triangle{T}) where {T}
+@inline function closeset_point(tri::Triangle{T}, P₀::SVector{3,T}) where {T}
     P₁, P₂, P₃, Nₚ = tri.P₁, tri.P₂, tri.P₃, tri.Nₚ
     P₀′ = P₀ - ((P₀-P₁)⋅Nₚ) * Nₚ
-    _position(P₀′, tri) - P₀
+    _closest_point(tri, P₀′)
 end
 
-@inline function _position(P₀′::SVector{3,T}, tri::Triangle{T}) where {T}
+@inline function _closest_point(tri::Triangle{T}, P₀′::SVector{3,T}) where {T}
     P₁, P₂, P₃, Nₚ, V₁, V₂, V₃ = tri.P₁, tri.P₂, tri.P₃, tri.Nₚ, tri.V₁, tri.V₂, tri.V₃
     P₁P₀′ = P₀′ - P₁
     P₂P₀′ = P₀′ - P₂
     P₃P₀′ = P₀′ - P₃
     if (V₁ ⋅ P₁P₀′) > 0
         if (V₂ ⋅ P₂P₀′) > 0
-            __position(P₀′, P₂, P₃, P₂P₀′, P₃P₀′, Nₚ)
+            __closest_point(P₂, P₃, Nₚ , P₀′, P₂P₀′, P₃P₀′)
         else
-            __position(P₀′, P₁, P₂, P₁P₀′, P₂P₀′, Nₚ)
+            __closest_point(P₁, P₂, Nₚ , P₀′, P₁P₀′, P₂P₀′)
         end
     else
         if (V₃ ⋅ P₃P₀′) > 0
-            __position(P₀′, P₃, P₁, P₃P₀′, P₁P₀′, Nₚ)
+            __closest_point(P₃, P₁, Nₚ , P₀′, P₃P₀′, P₁P₀′)
         else
-            __position(P₀′, P₂, P₃, P₂P₀′, P₃P₀′, Nₚ)
+            __closest_point(P₂, P₃, Nₚ , P₀′, P₂P₀′, P₃P₀′)
         end
     end
 end
 
-@inline function __position(P₀′::SVector{3,T}, P₁::SVector{3,T}, P₂::SVector{3,T}, P₁P₀′::SVector{3,T}, P₂P₀′::SVector{3,T}, Nₚ::SVector{3,T}) where {T}
+@inline function __closest_point(P₁::SVector{3,T}, P₂::SVector{3,T}, Nₚ::SVector{3,T}, P₀′::SVector{3,T}, P₁P₀′::SVector{3,T}, P₂P₀′::SVector{3,T}) where {T}
     P₁P₀′xP₂P₀′ = P₁P₀′ × P₂P₀′
     (P₁P₀′xP₂P₀′) ⋅ Nₚ > sqrt(eps(T)) && return P₀′
     P₁P₂ = P₂ - P₁

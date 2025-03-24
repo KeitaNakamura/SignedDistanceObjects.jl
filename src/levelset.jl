@@ -26,9 +26,9 @@ function generate_levelset(
             for i in eachindex(triangles, normals)
                 tri = triangles[i]
                 n = normals[i]
-                v = point_to_triangle(x, tri)
+                v = x - closeset_point(tri, x)
                 d² = norm2(v)
-                dₙ = -(v ⋅ n)
+                dₙ = v ⋅ n
                 if norm2(v-v_min) < eps(T) * d²_min
                     dₙ_max = ifelse(abs(dₙ) > abs(dₙ_max), dₙ, dₙ_max)
                 elseif d² < d²_min
