@@ -10,23 +10,17 @@ function Base.show(io::IO, levelset::LevelSet)
     print(io,   "  Number of nodes: ", commas(length(grid)))
 end
 
-function generate_levelset(mesh::Mesh, grid::Grid; verbose::Bool=false)
-    triangles = map(tri -> Triangle(tri.points...), mesh)
-    normals = reshape(mesh.normal, 3, length(mesh))
-    generate_levelset(triangles, normals[1,:], grid; verbose)
-end
-
 function generate_levelset(
-        triangles::AbstractVector{Triangle{T}}, normals::AbstractVector{<: AbstractVector}, grid::Grid{dim, T};
+        triangles::AbstractVector{Triangle{T}}, normals::AbstractVector{<: AbstractVector}, grid::Grid{3, T};
         verbose::Bool = false,
-    ) where {dim, T}
+    ) where {T}
     @assert length(triangles) == length(normals)
     ϕ = Array{T}(undef, size(grid))
     p = ProgressMeter.Progress(length(grid); desc = "Generating level set...", enabled=verbose)
     Threads.@threads for I in eachindex(grid)
         @inbounds begin
             x = grid[I]
-            v_min = fill(Inf, SVector{dim, T})
+            v_min = fill(Inf, SVector{3, T})
             d²_min = T(Inf)
             dₙ_max = T(0)
             for i in eachindex(triangles, normals)
