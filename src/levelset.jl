@@ -48,29 +48,29 @@ end
 function volume(levelset::LevelSet)
     ϕ, grid = levelset.ϕ, levelset.grid
 
-    l = map(step, grid.axes)
-    H = h -> heaviside_function(h, maximum(l))
+    l = spacing(grid)
+    H = h -> heaviside_function(h, l)
 
-    prod(l) * mapreduce((ϕ,x)->H(-ϕ), +, ϕ, grid)
+    l^3 * mapreduce((ϕ,x)->H(-ϕ), +, ϕ, grid)
 end
 
 function centroid(levelset::LevelSet)
     ϕ, grid = levelset.ϕ, levelset.grid
 
-    l = map(step, grid.axes)
-    H = h -> heaviside_function(h, maximum(l))
+    l = spacing(grid)
+    H = h -> heaviside_function(h, l)
 
     V = volume(levelset)
-    prod(l) * mapreduce((ϕ,x)->H(-ϕ)*SVector(x), +, ϕ, grid) / V
+    l^3 * mapreduce((ϕ,x)->H(-ϕ)*SVector(x), +, ϕ, grid) / V
 end
 
 function moment_of_inertia_per_density(levelset::LevelSet{T, dim}, c::SVector{dim, T} = centroid(levelset)) where {T, dim}
     ϕ, grid = levelset.ϕ, levelset.grid
 
-    l = map(step, grid.axes)
-    H = h -> heaviside_function(h, maximum(l))
+    l = spacing(grid)
+    H = h -> heaviside_function(h, l)
 
-    prod(l) * mapreduce((ϕ,x)->H(-ϕ)*moment_of_inertia(SVector(x), c), +, ϕ, grid)
+    l^3 * mapreduce((ϕ,x)->H(-ϕ)*moment_of_inertia(SVector(x), c), +, ϕ, grid)
 end
 
 function moment_of_inertia(x::SVector{3, T}, c::SVector{3, T}) where {T}
