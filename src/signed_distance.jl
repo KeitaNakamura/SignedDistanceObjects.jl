@@ -1,22 +1,23 @@
-struct LevelSet{T, dim, Axes}
-    ϕ::Array{T, dim}
-    grid::Grid{dim, T, Axes}
+function signed_distance(ϕ::AbstractArray, grid::Grid)
+    @assert size(ϕ) == size(grid)
+    linear_interpolation(grid.axes, ϕ, extrapolation_bc = Interpolations.Line())
 end
 
-function Base.show(io::IO, levelset::LevelSet)
-    grid = levelset.grid
-    println(io, "LevelSet:")
-    println(io, "  Grid axes: ", grid.axes)
-    print(io,   "  Number of nodes: ", commas(length(grid)))
+function signed_distance(
+        triangles::AbstractVector{Triangle{T}}, normals::AbstractVector{SVector{3, T}}, grid::Grid{3, T};
+        verbose::Bool = false,
+    ) where {T}
+    ϕ = discrete_signed_distance(triangles, normals, grid; verbose)
+    signed_distance(ϕ, grid)
 end
 
-function generate_levelset(
-        triangles::AbstractVector{Triangle{T}}, normals::AbstractVector{<: AbstractVector}, grid::Grid{3, T};
+function discrete_signed_distance(
+        triangles::AbstractVector{Triangle{T}}, normals::AbstractVector{SVector{3, T}}, grid::Grid{3, T};
         verbose::Bool = false,
     ) where {T}
     @assert length(triangles) == length(normals)
     ϕ = Array{T}(undef, size(grid))
-    p = ProgressMeter.Progress(length(grid); desc = "Generating level set...", enabled=verbose)
+    p = ProgressMeter.Progress(length(grid); desc = "Generating discrete signed distance...", enabled=verbose)
     Threads.@threads for I in eachindex(grid)
         @inbounds begin
             x = grid[I]
@@ -42,38 +43,36 @@ function generate_levelset(
         ProgressMeter.next!(p)
     end
     ProgressMeter.finish!(p)
-    LevelSet(ϕ, grid)
+    ϕ
 end
 
-function volume(levelset::LevelSet)
-    ϕ, grid = levelset.ϕ, levelset.grid
+discrete_signed_distance(ϕ::AbstractInterpolation) = discrete_signed_distance(parent(ϕ))
+discrete_signed_distance(ϕ::AbstractArray) = ϕ
 
+function volume(ϕ::AbstractArray, grid::Grid)
+    @assert size(ϕ) == size(grid)
     l = spacing(grid)
     H = h -> heaviside_function(h, l)
-
-    l^3 * mapreduce((ϕ,x)->H(-ϕ), +, ϕ, grid)
+    l^3 * mapreduce((ϕ,x)->H(-ϕ), +, discrete_signed_distance(ϕ), grid)
 end
 
-function centroid(levelset::LevelSet)
-    ϕ, grid = levelset.ϕ, levelset.grid
-
+function centroid(ϕ::AbstractArray, grid::Grid; volume::Real = volume(ϕ, grid))
+    @assert size(ϕ) == size(grid)
     l = spacing(grid)
     H = h -> heaviside_function(h, l)
-
-    V = volume(levelset)
-    l^3 * mapreduce((ϕ,x)->H(-ϕ)*SVector(x), +, ϕ, grid) / V
+    l^3 * mapreduce((ϕ,x)->H(-ϕ)*SVector(x), +, discrete_signed_distance(ϕ), grid) / volume
 end
 
-function moment_of_inertia_per_density(levelset::LevelSet{T, dim}, c::SVector{dim, T} = centroid(levelset)) where {T, dim}
-    ϕ, grid = levelset.ϕ, levelset.grid
-
+# per density
+function inertia_tensor(ϕ::AbstractArray, grid::Grid; origin::AbstractVector = centroid(ϕ, grid))
+    @assert size(ϕ) == size(grid)
     l = spacing(grid)
     H = h -> heaviside_function(h, l)
-
-    l^3 * mapreduce((ϕ,x)->H(-ϕ)*moment_of_inertia(SVector(x), c), +, ϕ, grid)
+    l^3 * mapreduce((ϕ,x)->H(-ϕ)*inertia_tensor(x,origin), +, discrete_signed_distance(ϕ), grid)
 end
 
-function moment_of_inertia(x::SVector{3, T}, c::SVector{3, T}) where {T}
+function inertia_tensor(x::SVector, c::AbstractVector)
+    @assert length(c) == 3
     I₁₁ = (x[2]-c[2])^2 + (x[3]-c[3])^2
     I₂₂ = (x[1]-c[1])^2 + (x[3]-c[3])^2
     I₃₃ = (x[1]-c[1])^2 + (x[2]-c[2])^2
@@ -92,5 +91,3 @@ function heaviside_function(ϕ::T, Δ::T, δ::T=T(1.5)) where {T <: Real}
     ξ >  1 && return T(1)
     (1 + ξ + sin(π*ξ)/π) / 2
 end
-
-commas(num::Integer) = replace(string(num), r"(?<=[0-9])(?=(?:[0-9]{3})+(?![0-9]))" => ",")

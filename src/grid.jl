@@ -1,6 +1,6 @@
-struct Grid{dim, T, Axes <: NTuple{dim, AbstractVector{T}}} <: AbstractArray{SVector{dim, T}, dim}
+struct Grid{dim, T, V <: AbstractVector{T}} <: AbstractArray{SVector{dim, T}, dim}
     h::T
-    axes::Axes
+    axes::NTuple{dim, V}
 end
 Base.size(grid::Grid) = map(length, grid.axes)
 

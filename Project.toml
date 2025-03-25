@@ -1,7 +1,7 @@
-name = "LevelSetObjects"
+name = "SignedDistanceObjects"
 uuid = "00f68d47-f248-4f51-b82e-d445770b1b0e"
 authors = ["Keita Nakamura <keita.nakamura.1109@gmail.com>"]
-version = "0.3.0"
+version = "0.1.0"
 
 [deps]
 FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
@@ -10,6 +10,7 @@ Interpolations = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 MeshIO = "7269a6da-0436-5bbc-96c2-40638cbb6118"
 ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
+Quaternions = "94ee1d12-ae83-5a48-8b1c-48b8ff168ae0"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 WriteVTK = "64499a7a-5c06-52f2-abe2-ccb03c286192"
 
@@ -20,6 +21,7 @@ Interpolations = "0.15"
 LinearAlgebra = "1"
 MeshIO = "0.5"
 ProgressMeter = "1.9"
+Quaternions = "0.7"
 StaticArrays = "1"
 WriteVTK = "1.18"
 julia = "1.9"

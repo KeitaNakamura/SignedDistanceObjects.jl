@@ -1,11 +1,10 @@
-function create_object(path::String; gridspacing::Real, density::Real=1, verbose::Bool=false)
+function create_object(path::String; spacing::Real, verbose::Bool=false)
     mesh = FileIO.load(path)
-    grid = Grid(gridspacing, mesh)
+    grid = Grid(spacing, mesh)
     triangles = mesh_triangles(mesh)
     normals = mesh_normals(mesh)
-    levelset = generate_levelset(triangles, normals, grid; verbose)
-    T = eltype(levelset.ϕ)
-    LevelSetObject(levelset; density=T(density))
+    dsd = discrete_signed_distance(triangles, normals, grid; verbose)
+    SignedDistanceObject(dsd, grid)
 end
 
 function mesh_triangles(mesh::Mesh{3, <: Any, <: NgonFace{3}})
@@ -18,12 +17,12 @@ function mesh_normals(mesh::Mesh{3, <: Any, <: NgonFace{3}})
     reinterpret(SVector{3, eltype(eltype(normals))}, normals)
 end
 
-function write_vtk(path::String, levelset::LevelSet)
-    vtk = WriteVTK.vtk_grid(path, levelset.grid.axes...)
-    vtk["Level sets"] = levelset.ϕ
+function write_vtk(path::String, ϕ::AbstractArray, grid::Grid)
+    vtk = WriteVTK.vtk_grid(path, grid.axes...)
+    vtk["Signed distance"] = ϕ
     WriteVTK.vtk_save(vtk)
 end
 
-function write_vtk(path::String, obj::LevelSetObject)
-    write_vtk(path, obj.levelset)
+function write_vtk(path::String, obj::SignedDistanceObject)
+    write_vtk(path, discrete_signed_distance(obj), get_grid(obj))
 end

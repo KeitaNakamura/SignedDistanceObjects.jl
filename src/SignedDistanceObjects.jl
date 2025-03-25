@@ -1,7 +1,8 @@
-module LevelSetObjects
+module SignedDistanceObjects
 
 using LinearAlgebra
 using StaticArrays
+using Quaternions
 
 using Interpolations
 using GeometryBasics
@@ -12,8 +13,8 @@ import ProgressMeter
 
 include("triangle.jl")
 include("grid.jl")
-include("levelset.jl")
+include("signed_distance.jl")
 include("object.jl")
 include("fileio.jl")
 
-end # module LevelSetObjects
+end # module SignedDistanceObjects
