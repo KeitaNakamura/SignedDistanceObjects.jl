@@ -4,20 +4,20 @@ function signed_distance(ϕ::AbstractArray, grid::Grid)
 end
 
 function signed_distance(
-        triangles::AbstractVector{Triangle{T}}, normals::AbstractVector{SVector{3, T}}, grid::Grid{3, T};
-        verbose::Bool = false,
-    ) where {T}
-    ϕ = discrete_signed_distance(triangles, normals, grid; verbose)
+        triangles::AbstractVector, normals::AbstractVector, grid::Grid;
+        progress::Bool = false,
+    )
+    ϕ = discrete_signed_distance(triangles, normals, grid; progress)
     signed_distance(ϕ, grid)
 end
 
 function discrete_signed_distance(
-        triangles::AbstractVector{Triangle{T}}, normals::AbstractVector{SVector{3, T}}, grid::Grid{3, T};
-        verbose::Bool = false,
-    ) where {T}
+        triangles::AbstractVector{Triangle{dim,T}}, normals::AbstractVector{<: StaticVector{dim,T}}, grid::Grid{dim,T};
+        progress::Bool = false,
+    ) where {dim, T}
     @assert length(triangles) == length(normals)
     ϕ = Array{T}(undef, size(grid))
-    p = ProgressMeter.Progress(length(grid); desc = "Generating discrete signed distance...", enabled=verbose)
+    p = ProgressMeter.Progress(length(grid); desc = "Generating discrete signed distance...", enabled=progress)
     Threads.@threads for I in eachindex(grid)
         @inbounds begin
             x = grid[I]

@@ -10,14 +10,3 @@ spacing(grid::Grid) = grid.h
     @boundscheck checkbounds(grid, I...)
     @inbounds SVector(map(getindex, grid.axes, I))
 end
-
-function Grid(spacing::Real, mesh::Mesh{dim, T}) where {dim, T}
-    lims = get_domain(mesh)
-    grid = Grid(T(spacing), map(lims) do (xmin, xmax)
-        collect(range(T(xmin-10spacing), T(xmax+10spacing); step=T(spacing)))
-    end)
-end
-
-function get_domain(mesh::Mesh{dim, T}) where {dim, T}
-    NTuple{dim, Tuple{T,T}}(extrema(reinterpret(reshape, T, mesh.position), dims=2))
-end

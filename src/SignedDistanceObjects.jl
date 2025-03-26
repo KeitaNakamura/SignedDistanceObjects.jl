@@ -2,12 +2,11 @@ module SignedDistanceObjects
 
 using LinearAlgebra
 using StaticArrays
+using GeometryBasics
+using Interpolations
 using Quaternions
 
-using Interpolations
-using GeometryBasics
-
-import FileIO
+using FileIO
 import WriteVTK
 import ProgressMeter
 
