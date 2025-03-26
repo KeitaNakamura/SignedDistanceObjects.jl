@@ -21,19 +21,17 @@ function discrete_signed_distance(
     Threads.@threads for I in eachindex(grid)
         @inbounds begin
             x = grid[I]
-            v_min = fill(Inf, SVector{3, T})
             d²_min = T(Inf)
             dₙ_max = T(0)
             for i in eachindex(triangles, normals)
                 tri = triangles[i]
                 n = normals[i]
-                v = x - closeset_point(tri, x)
+                v = x - closeset_point(x, tri)
                 d² = norm2(v)
                 dₙ = v ⋅ n
-                if norm2(v-v_min) < eps(T) * d²_min
+                if abs(d²-d²_min) < sqrt(eps(T)) * d²_min
                     dₙ_max = ifelse(abs(dₙ) > abs(dₙ_max), dₙ, dₙ_max)
                 elseif d² < d²_min
-                    v_min = v
                     d²_min = d²
                     dₙ_max = dₙ
                 end

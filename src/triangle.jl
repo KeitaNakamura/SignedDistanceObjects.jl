@@ -1,60 +1,66 @@
 struct Triangle{T}
-    P₁::SVector{3,T}
-    P₂::SVector{3,T}
-    P₃::SVector{3,T}
-    # precomputed
-    Nₚ::SVector{3,T} # normalized
-    V₁::SVector{3,T}
-    V₂::SVector{3,T}
-    V₃::SVector{3,T}
+    a::SVector{3,T}
+    b::SVector{3,T}
+    c::SVector{3,T}
 end
 
-function Triangle(P₁::AbstractVector{T}, P₂::AbstractVector{T}, P₃::AbstractVector{T}) where {T}
-    @assert length(P₁) == length(P₂) == length(P₃) == 3
-    Triangle(SVector{3,T}(P₁), SVector{3,T}(P₂), SVector{3,T}(P₃))
-end
-function Triangle(P₁::SVector{3,T}, P₂::SVector{3,T}, P₃::SVector{3,T}) where {T}
-    Nₚ = normalize((P₂-P₁) × (P₃-P₁))
-    V₁ = Nₚ × (normalize(P₁-P₂) + normalize(P₁-P₃))
-    V₂ = Nₚ × (normalize(P₂-P₃) + normalize(P₂-P₁))
-    V₃ = Nₚ × (normalize(P₃-P₁) + normalize(P₃-P₂))
-    Triangle(P₁, P₂, P₃, Nₚ, V₁, V₂, V₃)
+function Triangle(a::AbstractVector{T}, b::AbstractVector{T}, c::AbstractVector{T}) where {T}
+    @assert length(a) == length(b) == length(c) == 3
+    Triangle(SVector{3,T}(a), SVector{3,T}(b), SVector{3,T}(c))
 end
 
-@inline function closeset_point(tri::Triangle{T}, P₀::SVector{3,T}) where {T}
-    P₁, P₂, P₃, Nₚ = tri.P₁, tri.P₂, tri.P₃, tri.Nₚ
-    P₀′ = P₀ - ((P₀-P₁)⋅Nₚ) * Nₚ
-    _closest_point(tri, P₀′)
+@inline function closeset_point(p::SVector{3,T}, tri::Triangle{T}) where {T}
+    closeset_point(p, tri.a, tri.b, tri.c)
 end
 
-@inline function _closest_point(tri::Triangle{T}, P₀′::SVector{3,T}) where {T}
-    P₁, P₂, P₃, Nₚ, V₁, V₂, V₃ = tri.P₁, tri.P₂, tri.P₃, tri.Nₚ, tri.V₁, tri.V₂, tri.V₃
-    P₁P₀′ = P₀′ - P₁
-    P₂P₀′ = P₀′ - P₂
-    P₃P₀′ = P₀′ - P₃
-    if (V₁ ⋅ P₁P₀′) > 0
-        if (V₂ ⋅ P₂P₀′) > 0
-            __closest_point(P₂, P₃, Nₚ , P₀′, P₂P₀′, P₃P₀′)
-        else
-            __closest_point(P₁, P₂, Nₚ , P₀′, P₁P₀′, P₂P₀′)
-        end
-    else
-        if (V₃ ⋅ P₃P₀′) > 0
-            __closest_point(P₃, P₁, Nₚ , P₀′, P₃P₀′, P₁P₀′)
-        else
-            __closest_point(P₂, P₃, Nₚ , P₀′, P₂P₀′, P₃P₀′)
-        end
+# Book: Real-Time Collision Detection
+@inline function closeset_point(p::SVector{3,T}, a::SVector{3,T}, b::SVector{3,T}, c::SVector{3,T}) where {T}
+    # check if P in vertex region outside A
+    ab = b - a
+    ac = c - a
+    ap = p - a
+    d1 = ab ⋅ ap
+    d2 = ac ⋅ ap
+    (d1 ≤ 0 && d2 ≤ 0) && return a
+
+    # check if P in vertex region outside B
+    bp = p - b
+    d3 = ab ⋅ bp
+    d4 = ac ⋅ bp
+    (d3 ≥ 0 && d4 ≤ d3) && return b
+
+    # check if P in edge region of AB, if so return projection of P onto AB
+    vc = d1*d4 - d3*d2
+    if vc ≤ 0 && d1 ≥ 0 && d3 ≤ 0
+        v = d1 / (d1 - d3)
+        return a + v * ab
     end
-end
 
-@inline function __closest_point(P₁::SVector{3,T}, P₂::SVector{3,T}, Nₚ::SVector{3,T}, P₀′::SVector{3,T}, P₁P₀′::SVector{3,T}, P₂P₀′::SVector{3,T}) where {T}
-    P₁P₀′xP₂P₀′ = P₁P₀′ × P₂P₀′
-    (P₁P₀′xP₂P₀′) ⋅ Nₚ > sqrt(eps(T)) && return P₀′
-    P₁P₂ = P₂ - P₁
-    R = P₁P₂ × P₁P₀′xP₂P₀′
-    P₀′′ = P₁P₀′ - ((P₁P₀′⋅R)/norm2(R)) * R
-    t = (P₀′′⋅P₁P₂) / norm2(P₁P₂)
-    ifelse(0 ≤ t, ifelse(t ≤ 1, P₁+t*P₁P₂, P₂), P₁)
+    # check if P in vertex region outside C
+    cp = p - c
+    d5 = ab ⋅ cp
+    d6 = ac ⋅ cp
+    (d6 ≥ 0 && d5 ≤ d6) && return c
+
+    # check if P in edge region of AC, if so return projection of P onto AC
+    vb = d5*d2 - d1*d6
+    if vb ≤ 0 && d2 ≥ 0 && d6 ≤ 0
+        w = d2 / (d2 - d6)
+        return a + w * ac
+    end
+
+    # check if P in edge region of BC, if so return projection of P onto BC
+    va = d3*d6 - d5*d4
+    if va ≤ 0 && (d4 - d3) ≥ 0 && (d5 - d6) ≥ 0
+        w = (d4 - d3) / ((d4 - d3) + (d5 - d6))
+        return b + w * (c - b)
+    end
+
+    # P inside face region. compute Q through its barycentric coordinates
+    denom = inv(va + vb + vc)
+    v = vb * denom
+    w = vc * denom
+    return a + ab*v + ac*w
 end
 
 @inline norm2(x) = dot(x,x)
