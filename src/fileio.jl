@@ -20,8 +20,6 @@ function create_object(
     SignedDistanceObject(dsd, grid)
 end
 
-coordinates(mesh) = mesh.vertex_attributes[:position]
-
 function mesh_bbox(mesh::Mesh{dim, T, <: NgonFace{3}}) where {dim, T}
     position = coordinates(mesh)
     NTuple{dim, Tuple{T,T}}(extrema(reinterpret(reshape, T, position), dims=2))
