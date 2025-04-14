@@ -60,7 +60,7 @@ end
 
 function translate!(obj::SignedDistanceObject, Δx::AbstractVector)
     @assert length(Δx) == 3
-    obj.u[] = Δx
+    obj.u[] += Δx
     obj
 end
 
